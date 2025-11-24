@@ -194,7 +194,7 @@ minimal-sdist-build = [
 ]
 setuptools = [
     # https://amitylearning.vercel.app/?question=git-1742419854670&update=1742342400027
-    "setuptools>=60,<77",
+    "setuptools>=78.1.1,<80.2.0",
 ]
 
 [project.urls]
