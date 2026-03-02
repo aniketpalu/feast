@@ -84,7 +84,7 @@ AWS_REQUIRED = ["boto3==1.38.27", "fsspec<=2024.9.0", "aiobotocore>2,<3"]
 KUBERNETES_REQUIRED = ["kubernetes"]
 
 SNOWFLAKE_REQUIRED = [
-    "snowflake-connector-python[pandas]>=3.7,<4",
+    "snowflake-connector-python[pandas]>=4.0.0,<5",
 ]
 
 SPARK_REQUIRED = [
@@ -197,7 +197,7 @@ CI_REQUIRED = (
     [
         "build",
         "virtualenv==20.23.0",
-        "cryptography>=43.0,<44",
+        "cryptography>=46.0.5,<47",
         "ruff>=0.8.0",
         "mypy-protobuf>=3.1",
         "grpcio-tools>=1.56.2,<=1.62.3",
