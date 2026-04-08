@@ -32,6 +32,7 @@ import ExportButton from "../../components/ExportButton";
 import FeatureViewFormModal, {
   FeatureViewFormData,
 } from "../../components/FeatureViewFormModal";
+import { useUIVersion } from "../../contexts/UIVersionContext";
 
 const useLoadFeatureViews = () => {
   const registryUrl = useContext(RegistryPathContext);
@@ -97,6 +98,7 @@ const filterFn = (data: genericFVType[], filterInput: filterInputInterface) => {
 
 const Index = () => {
   const { isLoading, isSuccess, isError, data } = useLoadFeatureViews();
+  const { isV2 } = useUIVersion();
   const tagAggregationQuery = useFeatureViewTagsAggregation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -137,14 +139,18 @@ const Index = () => {
         iconType={FeatureViewIcon}
         pageTitle="Feature Views"
         rightSideItems={[
-          <EuiButton
-            fill
-            iconType="plus"
-            onClick={() => setIsModalOpen(true)}
-            key="create"
-          >
-            Create Feature View
-          </EuiButton>,
+          ...(isV2
+            ? [
+                <EuiButton
+                  fill
+                  iconType="plus"
+                  onClick={() => setIsModalOpen(true)}
+                  key="create"
+                >
+                  Create Feature View
+                </EuiButton>,
+              ]
+            : []),
           <ExportButton
             data={filterResult ?? []}
             fileName="feature_views"
