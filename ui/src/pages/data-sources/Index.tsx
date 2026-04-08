@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -9,6 +9,8 @@ import {
   EuiTitle,
   EuiFieldSearch,
   EuiSpacer,
+  EuiButton,
+  EuiCallOut,
 } from "@elastic/eui";
 
 import useLoadRegistry from "../../queries/useLoadRegistry";
@@ -20,6 +22,9 @@ import { DataSourceIcon } from "../../graphics/DataSourceIcon";
 import { useSearchQuery } from "../../hooks/useSearchInputWithTags";
 import { feast } from "../../protos";
 import ExportButton from "../../components/ExportButton";
+import DataSourceFormModal, {
+  DataSourceFormData,
+} from "../../components/DataSourceFormModal";
 
 const useLoadDatasources = () => {
   const registryUrl = useContext(RegistryPathContext);
@@ -55,12 +60,23 @@ const filterFn = (data: feast.core.IDataSource[], searchTokens: string[]) => {
 
 const Index = () => {
   const { isLoading, isSuccess, isError, data } = useLoadDatasources();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useDocumentTitle(`Data Sources | Feast`);
 
   const { searchString, searchTokens, setSearchString } = useSearchQuery();
 
   const filterResult = data ? filterFn(data, searchTokens) : data;
+
+  const handleCreateSubmit = (formData: DataSourceFormData) => {
+    console.log("Data source create payload:", formData);
+    setIsModalOpen(false);
+    setSuccessMessage(
+      `Data source "${formData.name}" is ready to be created. Backend integration coming soon.`,
+    );
+    setTimeout(() => setSuccessMessage(null), 5000);
+  };
 
   return (
     <EuiPageTemplate panelled>
@@ -69,14 +85,34 @@ const Index = () => {
         iconType={DataSourceIcon}
         pageTitle="Data Sources"
         rightSideItems={[
+          <EuiButton
+            fill
+            iconType="plus"
+            onClick={() => setIsModalOpen(true)}
+            key="create"
+          >
+            Create Data Source
+          </EuiButton>,
           <ExportButton
             data={filterResult ?? []}
             fileName="data_sources"
             formats={["json"]}
+            key="export"
           />,
         ]}
       />
       <EuiPageTemplate.Section>
+        {successMessage && (
+          <>
+            <EuiCallOut
+              title={successMessage}
+              color="success"
+              iconType="check"
+              size="s"
+            />
+            <EuiSpacer size="m" />
+          </>
+        )}
         {isLoading && (
           <p>
             <EuiLoadingSpinner size="m" /> Loading
@@ -105,6 +141,13 @@ const Index = () => {
           </React.Fragment>
         )}
       </EuiPageTemplate.Section>
+
+      {isModalOpen && (
+        <DataSourceFormModal
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleCreateSubmit}
+        />
+      )}
     </EuiPageTemplate>
   );
 };
