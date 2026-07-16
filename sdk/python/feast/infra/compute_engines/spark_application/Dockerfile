@@ -21,7 +21,8 @@ COPY README.md README.md
 
 # setuptools_scm needs .git to infer the version.
 # https://github.com/pypa/setuptools_scm#usage-from-docker
-RUN --mount=source=.git,target=.git,type=bind uv pip install --system --no-cache-dir '.[redis,grpcio,k8s]' pymysql
+# postgres extra: driver pod connects to PostgreSQL offline store + SQL registry (psycopg v3).
+RUN --mount=source=.git,target=.git,type=bind uv pip install --system --no-cache-dir '.[redis,grpcio,k8s,postgres]' pymysql
 
 # Hadoop AWS JARs for S3A filesystem support + AWS SDK v2 bundle
 RUN curl -sL https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.4.1/hadoop-aws-3.4.1.jar \
