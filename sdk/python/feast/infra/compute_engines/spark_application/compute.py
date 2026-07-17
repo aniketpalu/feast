@@ -91,14 +91,39 @@ class SparkApplicationComputeEngine(ComputeEngine):
                 "snowflake.registry, etc."
             )
 
-        k8s_config.load_config()
-        self.k8s_client = client.ApiClient()
-        self.core_v1 = client.CoreV1Api(self.k8s_client)
-        self.custom_api = client.CustomObjectsApi(self.k8s_client)
+        # Defer kubeconfig load until materialize/cleanup — feast apply only
+        # constructs the engine and calls update() (a no-op), so it must not
+        # require a cluster.
+        self._k8s_client = None
+        self._core_v1 = None
+        self._custom_api = None
         self._server_id = uuid.uuid4().hex[:8]
+
+    def _ensure_k8s(self) -> None:
+        """Load kubeconfig and create API clients on first K8s use."""
+        if self._custom_api is not None:
+            return
+        k8s_config.load_config()
+        self._k8s_client = client.ApiClient()
+        self._core_v1 = client.CoreV1Api(self._k8s_client)
+        self._custom_api = client.CustomObjectsApi(self._k8s_client)
+
+    @property
+    def core_v1(self):
+        self._ensure_k8s()
+        return self._core_v1
+
+    @property
+    def custom_api(self):
+        self._ensure_k8s()
+        return self._custom_api
 
     @property
     def supports_batch(self) -> bool:
+        return True
+
+    @property
+    def applies_materialization(self) -> bool:
         return True
 
     def update(
@@ -196,8 +221,11 @@ class SparkApplicationComputeEngine(ComputeEngine):
         job = SparkApplicationMaterializationJob(
             job_id, self.config.namespace, self.custom_api
         )
-        self._wait_for_completion(job)
-        return self._build_per_fv_jobs(registry, tasks, job_id, job)
+        try:
+            self._wait_for_completion(job)
+            return self._build_per_fv_jobs(registry, tasks, job_id, job)
+        finally:
+            self._cleanup(job_id)
 
     def _build_driver_repo_config(self) -> dict:
         """Build feature_store.yaml for the SparkApplication driver pod.
@@ -406,7 +434,6 @@ class SparkApplicationComputeEngine(ComputeEngine):
             if status == MaterializationJobStatus.SUCCEEDED:
                 return
             time.sleep(self.config.poll_interval_seconds)
-        self._cleanup(job._job_id)
         job._error = Exception(
             f"SparkApplication {job.job_id()} did not complete "
             f"within {self.config.job_timeout_seconds}s"
